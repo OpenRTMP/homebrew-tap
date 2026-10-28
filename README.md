@@ -22,12 +22,15 @@ Intel - `brew install` fetches a precompiled bottle from
 ## Moving from `openrtmp/packages`
 
 The formula used to live in
-[OpenRTMP/packages](https://github.com/OpenRTMP/packages). `brew update` moves
-an installed librtmp2 to this tap on its own. Afterwards remove the old, much
-larger tap:
+[OpenRTMP/packages](https://github.com/OpenRTMP/packages). `brew update`
+migrates an installed librtmp2 to this tap on its own only when `openrtmp/tap`
+is already trusted; otherwise it prints a notice and leaves librtmp2 where it
+is. Either way, these steps move it and remove the old, much larger tap:
 
 ```bash
+brew uninstall librtmp2
 brew untap openrtmp/packages
+brew install openrtmp/tap/librtmp2
 ```
 
 ## Updates
