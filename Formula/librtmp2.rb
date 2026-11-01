@@ -57,7 +57,7 @@ class Librtmp2 < Formula
       Version: #{version}
       Requires.private: openssl
       Libs: -L${libdir} -lrtmp2
-      Cflags: -I${includedir}/librtmp2
+      Cflags: -I${includedir}
     EOS
   end
 
