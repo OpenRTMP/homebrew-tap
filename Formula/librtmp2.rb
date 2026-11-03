@@ -94,6 +94,16 @@ class Librtmp2 < Formula
       }
     EOS
     cflags = shell_output("pkg-config --cflags librtmp2").split
+
+    # 1) The exported `Libs` line must link on its own: a missing `-lrtmp2` or
+    #    a wrong `-L` directory fails here. The binary is not executed because
+    #    the shared library is not on the runtime search path.
+    system ENV.cc, "consumer.c", "-o", "consumer-shared", *cflags,
+           *shell_output("pkg-config --libs librtmp2").split
+
+    # 2) `pkg-config --static` only adds the private flags; `-lrtmp2` would
+    #    still resolve to the shared library installed next to the archive, so
+    #    link the archive by path and exercise the OpenSSL flags for real.
     static_libs = shell_output("pkg-config --static --libs librtmp2").split
     static_libs -= ["-lrtmp2"]
     system ENV.cc, "consumer.c", "-o", "consumer", *cflags,
