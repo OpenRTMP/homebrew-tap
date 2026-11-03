@@ -79,18 +79,35 @@ class Librtmp2 < Formula
     assert_match "-I#{include}", shell_output("pkg-config --cflags librtmp2")
     assert_match "-lssl", shell_output("pkg-config --static --libs librtmp2")
 
-    # A consumer that references an exported symbol must compile, link against
-    # librtmp2 with the exported flags and run.
+    # `pkg-config --static` only adds the private flags; `-lrtmp2` would still
+    # resolve to the shared library installed next to the archive, so link the
+    # archive by path and exercise the OpenSSL flags for real.
     (testpath/"consumer.c").write <<~EOS
       #include <librtmp2/librtmp2.h>
 
       int main(void) {
-        return lrtmp2_version_string() == NULL;
+        if (lrtmp2_version_string() == NULL) {
+          return 1;
+        }
+        // Proves the TLS build is linked, i.e. the OpenSSL flags are required.
+        return lrtmp2_tls_supported() == 1 ? 0 : 2;
       }
     EOS
     cflags = shell_output("pkg-config --cflags librtmp2").split
-    libs = shell_output("pkg-config --static --libs librtmp2").split
-    system ENV.cc, "consumer.c", "-o", "consumer", *cflags, *libs
+
+    # 1) The exported `Libs` line must link on its own: a missing `-lrtmp2` or
+    #    a wrong `-L` directory fails here. The binary is not executed because
+    #    the shared library is not on the runtime search path.
+    system ENV.cc, "consumer.c", "-o", "consumer-shared", *cflags,
+           *shell_output("pkg-config --libs librtmp2").split
+
+    # 2) `pkg-config --static` only adds the private flags; `-lrtmp2` would
+    #    still resolve to the shared library installed next to the archive, so
+    #    link the archive by path and exercise the OpenSSL flags for real.
+    static_libs = shell_output("pkg-config --static --libs librtmp2").split
+    static_libs -= ["-lrtmp2"]
+    system ENV.cc, "consumer.c", "-o", "consumer", *cflags,
+           (lib/"librtmp2.a").to_s, *static_libs
     system "./consumer"
   end
 end
