@@ -55,14 +55,30 @@ class Librtmp2 < Formula
       Name: librtmp2
       Description: RTMP and RTMPS protocol library
       Version: #{version}
-      Requires.private: openssl
       Libs: -L${libdir} -lrtmp2
-      Cflags: -I${includedir}/librtmp2
+      Libs.private: -L#{Formula["openssl@3"].opt_lib} -lssl -lcrypto
+      Cflags: -I${includedir}
     EOS
   end
 
   test do
     assert_predicate include/"librtmp2/librtmp2.h", :exist?
     assert_predicate lib/"librtmp2.a", :exist?
+
+    # pkg-config must resolve with only this keg's .pc on the search path: a
+    # `Requires.private: openssl` cannot be resolved by users because
+    # openssl@3 is keg-only, and that failed every --cflags/--libs query.
+    ENV["PKG_CONFIG_LIBDIR"] = (lib/"pkgconfig").to_s
+    ENV.delete("PKG_CONFIG_PATH")
+    assert_match "-I#{include}", shell_output("pkg-config --cflags librtmp2")
+    assert_match "-lssl", shell_output("pkg-config --static --libs librtmp2")
+
+    # The documented include spelling must compile with the exported flags.
+    (testpath/"consumer.c").write <<~EOS
+      #include <librtmp2/librtmp2.h>
+      int main(void) { return 0; }
+    EOS
+    cflags = shell_output("pkg-config --cflags librtmp2").split
+    system ENV.cc, "consumer.c", "-o", "consumer", *cflags
   end
 end
