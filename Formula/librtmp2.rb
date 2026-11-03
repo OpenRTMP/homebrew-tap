@@ -15,7 +15,7 @@ class Librtmp2 < Formula
   end
 
   depends_on "cbindgen" => :build
-  depends_on "pkgconf" => :build
+  depends_on "pkgconf" => [:build, :test]
   depends_on "rust" => :build
   depends_on "openssl@3"
 
