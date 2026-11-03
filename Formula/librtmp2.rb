@@ -45,6 +45,12 @@ class Librtmp2 < Formula
       lib.install_symlink "liblibrtmp2.so" => "librtmp2.so"
     end
 
+    # OpenSSL's Linux libcrypto.pc carries `ex_libs: -ldl -pthread`. A static
+    # consumer needs those too; macOS gets them from libSystem, and linking
+    # `-ldl` there would be pointless.
+    openssl_private = "-L#{Formula["openssl@3"].opt_lib} -lssl -lcrypto"
+    openssl_private += " -ldl -pthread" if OS.linux?
+
     (lib/"pkgconfig").mkpath
     (lib/"pkgconfig/librtmp2.pc").write <<~EOS
       prefix=#{prefix}
@@ -56,7 +62,7 @@ class Librtmp2 < Formula
       Description: RTMP and RTMPS protocol library
       Version: #{version}
       Libs: -L${libdir} -lrtmp2
-      Libs.private: -L#{Formula["openssl@3"].opt_lib} -lssl -lcrypto
+      Libs.private: #{openssl_private}
       Cflags: -I${includedir}
     EOS
   end
@@ -73,12 +79,18 @@ class Librtmp2 < Formula
     assert_match "-I#{include}", shell_output("pkg-config --cflags librtmp2")
     assert_match "-lssl", shell_output("pkg-config --static --libs librtmp2")
 
-    # The documented include spelling must compile with the exported flags.
+    # A consumer that references an exported symbol must compile, link against
+    # librtmp2 with the exported flags and run.
     (testpath/"consumer.c").write <<~EOS
       #include <librtmp2/librtmp2.h>
-      int main(void) { return 0; }
+
+      int main(void) {
+        return lrtmp2_version_string() == NULL;
+      }
     EOS
     cflags = shell_output("pkg-config --cflags librtmp2").split
-    system ENV.cc, "consumer.c", "-o", "consumer", *cflags
+    libs = shell_output("pkg-config --static --libs librtmp2").split
+    system ENV.cc, "consumer.c", "-o", "consumer", *cflags, *libs
+    system "./consumer"
   end
 end
