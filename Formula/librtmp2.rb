@@ -5,6 +5,15 @@ class Librtmp2 < Formula
   sha256 "b657a2f2ce83b2c74680f558b9aa7e51374a9773d5f2459de6c81aefed64b396"
   license "MIT"
 
+  bottle do
+    root_url "https://packages.openrtmp.org/homebrew/librtmp2/0.17.0"
+    sha256 cellar: :any, arm64_golden_gate: "b67c7781830c52beced69b7b3c4a222cd7ab42c9eb3393bd31826bc840436355"
+    sha256 cellar: :any, arm64_tahoe:       "6c22061d4f1b436a085d01c82bcd178ca5189281da8456ced992d29179c21991"
+    sha256 cellar: :any, arm64_sequoia:     "b24050c8e3712d2513b37892ccf89705658449d02bacb8cf9601a6faaaae7539"
+    sha256 cellar: :any, tahoe:             "8d3efb888ab8033e690c0826fb934b81db3ee46166653420b67d111b1d856856"
+    sha256 cellar: :any, sequoia:           "ac0989f760c3831b52fdf1634a7ddd42155b82ce2459a9bb78d397e2d0bf8081"
+  end
+
   depends_on "cbindgen" => :build
   depends_on "pkgconf" => [:build, :test]
   depends_on "rust" => :build
